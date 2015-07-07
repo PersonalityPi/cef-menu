@@ -31,6 +31,18 @@ bool fileExists(const wchar_t* fileName)
 	return infile.good();
 }
 
+bool dirExists(const std::wstring& dirName_in)
+{
+	DWORD ftyp = GetFileAttributes(dirName_in.c_str());
+	if (ftyp == INVALID_FILE_ATTRIBUTES)
+		return false;
+
+	if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
+		return true;
+
+	return false;
+}
+
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
@@ -61,30 +73,33 @@ void SimpleApp::OnContextInitialized() {
 
   std::wstring url;
 
+  wchar_t pathToOurDirectory[260];
+  GetModuleFileName(NULL, pathToOurDirectory, 260);
+  PathRemoveFileSpec(pathToOurDirectory);
+
+  std::wstring path(pathToOurDirectory);
+  path.append(L"\\mods\\menus\\default");
+
+  if (dirExists(path))
+  {
+	  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
+	  manager->SetStoragePath(path, true, NULL);
+  }
+
+  path.append(L"\\index.html");
+
+  if (!fileExists(path.c_str()))
+  {
+	url = L"http://thefeeltrain.github.io";
+  }
+  else
+  {
+	url = path;
+  }
+
   // Check if a "--url=" value was provided via the command-line. If so, use
   // that instead of the default URL.
-  CefRefPtr<CefCommandLine> command_line =
-	  CefCommandLine::GetGlobalCommandLine();
-  url = command_line->GetSwitchValue("url");
-
-  if (url.empty())
-  {
-	  wchar_t pathToOurDirectory[260];
-	  GetModuleFileName(NULL, pathToOurDirectory, 260);
-	  PathRemoveFileSpec(pathToOurDirectory);
-
-	  std::wstring fullPathToIndexHtmlFile(pathToOurDirectory);
-	  fullPathToIndexHtmlFile.append(L"\\mods\\menus\\default\\index.html");
-
-	  if (!fileExists(fullPathToIndexHtmlFile.c_str()))
-	  {
-		  url = L"http://thefeeltrain.github.io";
-	  }
-	  else
-	  {
-		  url = fullPathToIndexHtmlFile;
-	  }
-  }
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
 
   std::string hwndString = command_line->GetSwitchValue("hwnd").ToString();
   if (!hwndString.empty())
