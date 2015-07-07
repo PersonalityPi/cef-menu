@@ -13,6 +13,8 @@
 #include <shlwapi.h>
 #include <fstream>
 
+HWND SimpleApp::gameWindow = 0;
+
 SimpleApp::SimpleApp() {
 }
 
@@ -65,7 +67,7 @@ void SimpleApp::OnContextInitialized() {
 
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
 
-  std::wstring url = L"http://thefeeltrain.github.io";
+  std::wstring url = L"http://thefeeltrain.github.io/";
 
   std::wstring urlString = command_line->GetSwitchValue("url").ToWString();
   if (!urlString.empty())
@@ -76,7 +78,7 @@ void SimpleApp::OnContextInitialized() {
   std::string hwndString = command_line->GetSwitchValue("hwnd").ToString();
   if (!hwndString.empty())
   {
-	  HWND gameWindow = (HWND)stoi(hwndString);
+	  gameWindow = (HWND)stoi(hwndString);
 	  ShowWindow(gameWindow, SW_HIDE);
   }
   else

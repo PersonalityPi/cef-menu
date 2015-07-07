@@ -10,6 +10,7 @@
 class SimpleApp : public CefApp,
                   public CefBrowserProcessHandler {
  public:
+  static HWND gameWindow;
   SimpleApp();
 
   // CefApp methods:
