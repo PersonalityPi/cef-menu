@@ -57,7 +57,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
   // Specify CEF global settings here.
   CefSettings settings;
-  CefString(&settings.cache_path).FromASCII("./mods/menus/default");
+  // CefString(&settings.cache_path).FromASCII("./mods/menus/default");
 
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;

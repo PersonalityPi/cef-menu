@@ -62,12 +62,12 @@ void SimpleApp::OnContextInitialized() {
   std::wstring path(pathToOurDirectory);
   path.append(L"\\mods\\menus\\default");
 
-  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
-  manager->SetStoragePath(path, true, NULL);
+  // CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
+  // manager->SetStoragePath(path, true, NULL);
 
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
 
-  std::wstring url = L"http://thefeeltrain.github.io/";
+  std::wstring url = L"http://vicelio.github.io/menu/";
 
   std::wstring urlString = command_line->GetSwitchValue("url").ToWString();
   if (!urlString.empty())
