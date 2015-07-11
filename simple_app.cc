@@ -18,6 +18,12 @@ HWND SimpleApp::gameWindow = 0;
 SimpleApp::SimpleApp() {
 }
 
+bool fileExists(const wchar_t* fileName)
+{
+	std::ifstream infile(fileName);
+	return infile.good();
+}
+
 void GetDesktopResolution(int& horizontal, int& vertical)
 {
 	RECT desktop;
@@ -64,10 +70,21 @@ void SimpleApp::OnContextInitialized() {
 
   // CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
   // manager->SetStoragePath(path, true, NULL);
+  
+  path.append(L"\\index.html");
+
+  std::wstring url;
+
+  if (fileExists(path.c_str()))
+  {
+	  url = path;
+  }
+  else
+  {
+	  url = L"http://thefeeltrain.github.io";
+  }
 
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
-
-  std::wstring url = L"http://vicelio.github.io/menu/";
 
   std::wstring urlString = command_line->GetSwitchValue("url").ToWString();
   if (!urlString.empty())
