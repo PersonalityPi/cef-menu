@@ -41,8 +41,8 @@ void SimpleApp::OnContextInitialized() {
 
   int horizontal, vertical;
   GetDesktopResolution(horizontal, vertical);
-  window_info.width = horizontal - 100;
-  window_info.height = vertical - 100;
+  window_info.width = horizontal;
+  window_info.height = vertical;
 
   int xPos = (horizontal - window_info.width) / 2;
   int yPos = (vertical - window_info.height) / 2;
