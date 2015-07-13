@@ -67,10 +67,27 @@ void SimpleHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   SetWindowPos(hWndHost, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
   // Force 16:9 ratio
+
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
+
   RECT desktop;
   GetWindowRect(hWndHost, &desktop);
-  desktop.bottom = 0.9 * desktop.bottom;
-  desktop.right = desktop.bottom * 16 / 9;
+  desktop.bottom = desktop.bottom;
+  desktop.right = desktop.right;
+
+  if (command_line->HasSwitch("window"))
+  {
+	  GetWindowRect(hWndHost, &desktop);
+	  desktop.bottom = 0.9 * desktop.bottom;
+	  desktop.right = desktop.bottom * 16 / 9;
+  }
+
+  if (command_line->HasSwitch("fullscreen"))
+  {
+	  GetWindowRect(hWndHost, &desktop);
+	  desktop.bottom = desktop.bottom;
+	  desktop.right = desktop.right;
+  }
   // SetWindowPos(hWndHost, 0, 0, 0, desktop.right, desktop.bottom, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
 
   // Recenter

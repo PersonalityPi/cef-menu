@@ -75,6 +75,26 @@ void SimpleApp::OnContextInitialized() {
 	  url = urlString;
   }
 
+  if (command_line->HasSwitch("window"))
+  {
+	  window_info.width = horizontal - 100;
+	  window_info.height = vertical - 100;
+	  xPos = (horizontal - window_info.width) / 2;
+	  yPos = (vertical - window_info.height) / 2;
+	  window_info.x = xPos;
+	  window_info.y = yPos;
+  }
+
+  if (command_line->HasSwitch("fullscreen"))
+  {
+	  window_info.width = horizontal;
+	  window_info.height = vertical;
+	  xPos = (horizontal - window_info.width) / 2;
+	  yPos = (vertical - window_info.height) / 2;
+	  window_info.x = xPos;
+	  window_info.y = yPos;
+  }
+
   std::string hwndString = command_line->GetSwitchValue("hwnd").ToString();
   if (!hwndString.empty())
   {
