@@ -35,15 +35,6 @@ SimpleHandler* SimpleHandler::GetInstance() {
   return g_instance;
 }
 
-void GetDesktopResolutionDup(int& horizontal, int& vertical)
-{
-	RECT desktop;
-	const HWND hDesktop = GetDesktopWindow();
-	GetWindowRect(hDesktop, &desktop);
-	horizontal = desktop.right;
-	vertical = desktop.bottom;
-}
-
 void SimpleHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -54,31 +45,6 @@ void SimpleHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   HWND hWndHost = browser->GetHost()->GetWindowHandle();
   HWND hWndHostChild = GetWindow(hWndHost, GW_CHILD);
   RevokeDragDrop(hWndHostChild);
-
-  // Remove border
-  LONG lStyle = GetWindowLongPtr(hWndHost, GWL_STYLE);
-  lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
-  SetWindowLongPtr(hWndHost, GWL_STYLE, lStyle);
-
-  LONG lExStyle = GetWindowLongPtr(hWndHost, GWL_EXSTYLE);
-  lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
-  SetWindowLongPtr(hWndHost, GWL_EXSTYLE, lExStyle);
-
-  SetWindowPos(hWndHost, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-
-  // Force 16:9 ratio
-  RECT desktop;
-  GetWindowRect(hWndHost, &desktop);
-  desktop.bottom = 0.9 * desktop.bottom;
-  desktop.right = desktop.bottom * 16 / 9;
-  // SetWindowPos(hWndHost, 0, 0, 0, desktop.right, desktop.bottom, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
-
-  // Recenter
-  int horizontal, vertical;
-  GetDesktopResolutionDup(horizontal, vertical);
-  int xPos = (horizontal - desktop.right) / 2;
-  int yPos = (vertical - desktop.bottom) / 2;
-  MoveWindow(hWndHost, xPos, yPos, desktop.right, desktop.bottom, true);
 }
 
 bool SimpleHandler::DoClose(CefRefPtr<CefBrowser> browser) {

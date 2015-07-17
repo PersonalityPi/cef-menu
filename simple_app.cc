@@ -15,17 +15,7 @@
 
 HWND SimpleApp::gameWindow = 0;
 
-SimpleApp::SimpleApp() {
-}
-
-void GetDesktopResolution(int& horizontal, int& vertical)
-{
-	RECT desktop;
-	const HWND hDesktop = GetDesktopWindow();
-	GetWindowRect(hDesktop, &desktop);
-	horizontal = desktop.right;
-	vertical = desktop.bottom;
-}
+SimpleApp::SimpleApp() {}
 
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
@@ -33,21 +23,20 @@ void SimpleApp::OnContextInitialized() {
   // Information used when creating the native window.
   CefWindowInfo window_info;
 
-#if defined(OS_WIN)
-  // On Windows we need to specify certain flags that will be passed to
-  // CreateWindowEx().
-  window_info.SetAsPopup(NULL, "Custom Menu");
-#endif
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
 
-  int horizontal, vertical;
-  GetDesktopResolution(horizontal, vertical);
-  window_info.width = horizontal - 100;
-  window_info.height = vertical - 100;
-
-  int xPos = (horizontal - window_info.width) / 2;
-  int yPos = (vertical - window_info.height) / 2;
-  window_info.x = xPos;
-  window_info.y = yPos;
+  std::string hwndString = command_line->GetSwitchValue("hwnd").ToString();
+  if (!hwndString.empty())
+  {
+    gameWindow = (HWND)stoi(hwndString);
+	RECT windowRect;
+	GetClientRect(gameWindow, &windowRect);
+    window_info.SetAsChild(gameWindow, windowRect);
+  }
+  else
+  {
+    CefShutdown();
+  }
 
   // SimpleHandler implements browser-level callbacks.
   CefRefPtr<SimpleHandler> handler(new SimpleHandler());
@@ -65,25 +54,12 @@ void SimpleApp::OnContextInitialized() {
   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
   manager->SetStoragePath(path, true, NULL);
 
-  CefRefPtr<CefCommandLine> command_line = CefCommandLine::GetGlobalCommandLine();
-
   std::wstring url = L"http://eldewrito.github.io/menu/";
 
   std::wstring urlString = command_line->GetSwitchValue("url").ToWString();
   if (!urlString.empty())
   {
 	  url = urlString;
-  }
-
-  std::string hwndString = command_line->GetSwitchValue("hwnd").ToString();
-  if (!hwndString.empty())
-  {
-	  gameWindow = (HWND)stoi(hwndString);
-	  ShowWindow(gameWindow, SW_HIDE);
-  }
-  else
-  {
-	  CefShutdown();
   }
 
   // Create the first browser window.
