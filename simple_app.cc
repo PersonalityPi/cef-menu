@@ -54,7 +54,7 @@ void SimpleApp::OnContextInitialized() {
   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
   manager->SetStoragePath(path, true, NULL);
 
-  std::wstring url = L"http://eldewrito.github.io/menu/";
+  std::wstring url = L"http://no1dead.github.io/";
 
   std::wstring urlString = command_line->GetSwitchValue("url").ToWString();
   if (!urlString.empty())
