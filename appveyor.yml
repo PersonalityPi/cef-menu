@@ -1,0 +1,32 @@
+version: 1.0.{build}
+clone_folder: C:\Projects\cef-menu
+init:
+- cmd: git config --global core.autocrlf input
+environment:
+  _zip: '%APPVEYOR_BUILD_FOLDER%\custom_menu.7z'
+  _7z: 7z -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on a %_zip% -r -x!*.pdb -x!*.config -x!*.exp -x!*.ilk -x!*.lib
+  _build: '"C:\Program Files (x86)\MSBuild\12.0\Bin\MSBuild.exe" "cefsimple.vcxproj" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=Release /p:Platform="x86"'
+install:
+- cmd: >-
+    cinst cmake -version 3.2.3 -y
+
+    cmake --version
+
+    7z x %APPVEYOR_BUILD_FOLDER%\Resources.7z -o%APPVEYOR_BUILD_FOLDER%\ -y
+
+    CD %APPVEYOR_BUILD_FOLDER%\
+
+    generate_vs2013_sln_files.bat
+build_script:
+- cmd: >-
+    CD %APPVEYOR_BUILD_FOLDER%\build\cefsimple\
+
+    %_build%
+
+    CD Release
+
+    MOVE cefsimple.exe custom_menu.exe
+
+    %_7z% *
+
+    appveyor PushArtifact %_zip%

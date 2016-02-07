@@ -1,201 +1,148 @@
-# Copyright (c) 2014 The Chromium Embedded Framework Authors. All rights
-# reserved. Use of this source code is governed by a BSD-style license that
-# can be found in the LICENSE file.
+cmake_minimum_required(VERSION 2.8.12.1)
+set(CMAKE_CONFIGURATION_TYPES Debug Release)
+project(cef)
+set_property(GLOBAL PROPERTY OS_FOLDERS ON)
+set(OS_WINDOWS 1)
+set(PROJECT_ARCH "x86")
 
-#
-# Source files.
-#
-
-# cefsimple sources.
-set(CEFSIMPLE_SRCS
-  simple_app.cc
-  simple_app.h
-  simple_handler.cc
-  simple_handler.h
-  )
-set(CEFSIMPLE_SRCS_LINUX
-  cefsimple_linux.cc
-  simple_handler_linux.cc
-  )
-set(CEFSIMPLE_SRCS_MACOSX
-  cefsimple_mac.mm
-  simple_handler_mac.mm
-  )
-set(CEFSIMPLE_SRCS_WINDOWS
-  cefsimple.exe.manifest
-  cefsimple.rc
-  cefsimple_win.cc
-  resource.h
-  simple_handler_win.cc
-  )
-APPEND_PLATFORM_SOURCES(CEFSIMPLE_SRCS)
-source_group(cefsimple FILES ${CEFSIMPLE_SRCS})
-
-set(CEFSIMPLE_RES_SRCS_WINDOWS
-  res/cefsimple.ico
-  res/small.ico
-  )
-APPEND_PLATFORM_SOURCES(CEFSIMPLE_RES_SRCS)
-source_group(cefsimple\\\\res FILES ${CEFSIMPLE_RES_SRCS})
-
-set(CEFSIMPLE_SRCS
-  ${CEFSIMPLE_SRCS}
-  ${CEFSIMPLE_RES_SRCS}
-  )
-
-# cefsimple helper sources.
-set(CEFSIMPLE_HELPER_SRCS_MACOSX
-  process_helper_mac.cc
-  )
-APPEND_PLATFORM_SOURCES(CEFSIMPLE_HELPER_SRCS)
-source_group(cefsimple FILES ${CEFSIMPLE_HELPER_SRCS})
-
-# cefsimple resources.
-set(CEFSIMPLE_RESOURCES_MAC_SRCS_MACOSX
-  mac/Info.plist
-  mac/cefsimple.icns
-  )
-APPEND_PLATFORM_SOURCES(CEFSIMPLE_RESOURCES_MAC_SRCS)
-source_group(cefsimple\\\\mac FILES ${CEFSIMPLE_RESOURCES_MAC_SRCS})
-
-set(CEFSIMPLE_RESOURCES_MAC_ENGLISH_LPROJ_SRCS_MACOSX
-  mac/English.lproj/InfoPlist.strings
-  mac/English.lproj/MainMenu.xib
-  )
-APPEND_PLATFORM_SOURCES(CEFSIMPLE_RESOURCES_MAC_ENGLISH_LPROJ_SRCS)
-source_group(cefsimple\\\\mac\\\\English.lproj FILES ${CEFSIMPLE_RESOURCES_MAC_ENGLISH_LPROJ_SRCS})
-
-set(CEFSIMPLE_RESOURCES_SRCS
-  ${CEFSIMPLE_RESOURCES_MAC_SRCS}
-  ${CEFSIMPLE_RESOURCES_MAC_ENGLISH_LPROJ_SRCS}
-  )
-
-
-#
-# Shared configuration.
-#
-
-# Target executable names.
-set(CEF_TARGET "cefsimple")
-if(OS_MACOSX)
-  set(CEF_HELPER_TARGET "cefsimple Helper")
+if(NOT CMAKE_BUILD_TYPE AND
+   (${CMAKE_GENERATOR} STREQUAL "Ninja" OR ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles"))
+  # CMAKE_BUILD_TYPE should be specified when using Ninja or Unix Makefiles.
+  set(CMAKE_BUILD_TYPE Release)
+  message(WARNING "No CMAKE_BUILD_TYPE value selected, using ${CMAKE_BUILD_TYPE}")
 endif()
 
-# Logical target used to link the libcef library.
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
-
-# Determine the target output directory.
-SET_CEF_TARGET_OUT_DIR()
-
-
-#
-# Linux configuration.
-#
-
-if(OS_LINUX)
-  # Executable target.
-  add_executable(${CEF_TARGET} ${CEFSIMPLE_SRCS})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
-
-  # Set rpath so that libraries can be placed next to the executable.
-  set_target_properties(${CEF_TARGET} PROPERTIES INSTALL_RPATH "$ORIGIN")
-  set_target_properties(${CEF_TARGET} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-  set_target_properties(${CEF_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CEF_TARGET_OUT_DIR})
-
-  # Copy binary and resource files to the target output directory.
-  COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
-  COPY_FILES("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
-
-  # Set SUID permissions on the chrome-sandbox target.
-  SET_LINUX_SUID_PERMISSIONS("${CEF_TARGET}" "${CEF_TARGET_OUT_DIR}/chrome-sandbox")
-endif()
-
-
-#
-# Mac OS X configuration.
-#
-
-if(OS_MACOSX)
-  # Output paths for the app bundles.
-  set(CEF_APP "${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.app")
-  set(CEF_HELPER_APP "${CEF_TARGET_OUT_DIR}/${CEF_HELPER_TARGET}.app")
-
-  # Variable referenced from Info.plist files.
-  set(PRODUCT_NAME "${CEF_TARGET}")
-
-  # Helper executable target.
-  add_executable(${CEF_HELPER_TARGET} MACOSX_BUNDLE ${CEFSIMPLE_HELPER_SRCS})
-  add_dependencies(${CEF_HELPER_TARGET} libcef_dll_wrapper)
-  target_link_libraries(${CEF_HELPER_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
-  set_target_properties(${CEF_HELPER_TARGET} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist
-    )
-
-  # Fix the framework link in the helper executable.
-  FIX_MACOSX_HELPER_FRAMEWORK_LINK(${CEF_HELPER_TARGET} ${CEF_HELPER_APP})
-
-  # Main executable target.
-  add_executable(${CEF_TARGET} MACOSX_BUNDLE ${CEFSIMPLE_RESOURCES_SRCS} ${CEFSIMPLE_SRCS})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper "${CEF_HELPER_TARGET}")
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
-  set_target_properties(${CEF_TARGET} PROPERTIES
-    RESOURCE "${CEFSIMPLE_RESOURCES_SRCS}"
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist
-    )
-
-  # Copy files into the main app bundle.
-  add_custom_command(
-    TARGET ${CEF_TARGET}
-    POST_BUILD
-    # Copy the helper app bundle into the Frameworks directory.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CEF_HELPER_APP}"
-            "${CEF_APP}/Contents/Frameworks/${CEF_HELPER_TARGET}.app"
-    # Copy the CEF framework into the Frameworks directory.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
-            "${CEF_APP}/Contents/Frameworks/Chromium Embedded Framework.framework"
-    VERBATIM
-    )
-
-  # Fix the framework link in the main executable.
-  FIX_MACOSX_MAIN_FRAMEWORK_LINK(${CEF_TARGET} ${CEF_APP})
-
-  # Make the other helper app bundles.
-  MAKE_MACOSX_HELPERS(${CEF_TARGET} ${CEF_APP})
-
-  if(NOT ${CMAKE_GENERATOR} STREQUAL "Xcode")
-    # Manually process and copy over resource files.
-    # The Xcode generator handles this via the set_target_properties RESOURCE directive.
-    set(PREFIXES "mac/")  # Remove these prefixes from input file paths.
-    COPY_MACOSX_RESOURCES("${CEFSIMPLE_RESOURCES_SRCS}" "${PREFIXES}" "${CEF_TARGET}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_APP}")
-  endif()
-endif()
-
-
-#
-# Windows configuration.
-#
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
+include("macros")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS)
 
 if(OS_WINDOWS)
-  # Executable target.
-  add_executable(${CEF_TARGET} WIN32 ${CEFSIMPLE_SRCS})
-  add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-  target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
+  set(CEF_DEBUG_INFO_FLAG "/Zi" CACHE STRING "Optional flag specifying specific /Z flag to use")
+  set(CEF_LIBTYPE                 STATIC)
+  set(CEF_COMPILER_FLAGS          "/MP /Gy /GR- /W4 /WX /wd\"4100\" /wd\"4127\" /wd\"4244\" /wd\"4512\" /wd\"4701\" /wd\"4702\" /wd\"4996\" ${CEF_DEBUG_INFO_FLAG}")
+  set(CEF_COMPILER_FLAGS_DEBUG    "/MTd /RTC1 /Od")
+  set(CEF_COMPILER_FLAGS_RELEASE  "/MT /O2 /Ob2 /GF /D NDEBUG /D _NDEBUG")
+  set(CEF_LINKER_FLAGS_DEBUG      "/DEBUG")
+  set(CEF_EXE_LINKER_FLAGS        "/MANIFEST:NO")
+  add_definitions(-DWIN32 -D_WIN32 -D_WINDOWS -DUNICODE -D_UNICODE -DWINVER=0x0602
+                  -D_WIN32_WINNT=0x602 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_HAS_EXCEPTIONS=0)
 
-  if(USE_SANDBOX)
-    # Logical target used to link the cef_sandbox library.
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
-    target_link_libraries(${CEF_TARGET} cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
+  set(CEF_STANDARD_LIBS "comctl32.lib" "rpcrt4.lib" "shlwapi.lib")
+  set(CEF_RESOURCE_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
+  set(CEF_BINARY_DIR          "${CMAKE_CURRENT_SOURCE_DIR}/$<CONFIGURATION>")
+  set(CEF_BINARY_DIR_DEBUG    "${CMAKE_CURRENT_SOURCE_DIR}/Debug")
+  set(CEF_BINARY_DIR_RELEASE  "${CMAKE_CURRENT_SOURCE_DIR}/Release")
+  set(CEF_LIB_DEBUG   "${CEF_BINARY_DIR_DEBUG}/libcef.lib")
+  set(CEF_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/libcef.lib")
+
+  set(CEF_BINARY_FILES
+    d3dcompiler_43.dll
+    d3dcompiler_47.dll
+    libcef.dll
+    libEGL.dll
+    libGLESv2.dll
+    natives_blob.bin
+    snapshot_blob.bin
+    wow_helper.exe
+    )
+
+  set(CEF_RESOURCE_FILES
+    cef.pak
+    cef_100_percent.pak
+    cef_200_percent.pak
+    cef_extensions.pak
+    devtools_resources.pak
+    icudtl.dat
+    locales
+    )
+
+  option(USE_SANDBOX "Enable or disable use of the sandbox." ON)
+  if(USE_SANDBOX AND NOT MSVC_VERSION EQUAL 1800)
+    set(USE_SANDBOX OFF)
   endif()
 
-  # Add the custom manifest files to the executable.
-  ADD_WINDOWS_MANIFEST("${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_TARGET}")
+  if(USE_SANDBOX)
+    add_definitions(-DPSAPI_VERSION=1)
+    add_definitions(-DCEF_USE_SANDBOX)
+    set(CEF_SANDBOX_STANDARD_LIBS "dbghelp.lib" "psapi.lib")
+    set(CEF_SANDBOX_LIB_DEBUG "${CEF_BINARY_DIR_DEBUG}/cef_sandbox.lib")
+    set(CEF_SANDBOX_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/cef_sandbox.lib")
+  endif()
 
-  # Copy binary and resource files to the target output directory.
-  COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
-  COPY_FILES("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
+  option(USE_ATL "Enable or disable use of ATL." ON)
+  if(USE_ATL)
+    get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
+    get_filename_component(VC_DIR ${VC_BIN_DIR} DIRECTORY)
+    if(NOT IS_DIRECTORY "${VC_DIR}/atlmfc")
+      set(USE_ATL OFF)
+    endif()
+  endif()
+
+  if(USE_ATL)
+    add_definitions(-DCEF_USE_ATL)
+  endif()
 endif()
 
-# set_target_properties(cefsimple PROPERTIES OUTPUT_NAME "custom_menu")
+set(CMAKE_C_FLAGS                     "${CEF_COMPILER_FLAGS} ${CEF_C_COMPILER_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG               "${CEF_COMPILER_FLAGS_DEBUG} ${CEF_C_COMPILER_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS_RELEASE             "${CEF_COMPILER_FLAGS_RELEASE} ${CEF_C_COMPILER_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS                   "${CEF_COMPILER_FLAGS} ${CEF_CXX_COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG             "${CEF_COMPILER_FLAGS_DEBUG} ${CEF_CXX_COMPILER_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_RELEASE           "${CEF_COMPILER_FLAGS_RELEASE} ${CEF_CXX_COMPILER_FLAGS_RELEASE}")
+set(CMAKE_EXE_LINKER_FLAGS            "${CEF_LINKER_FLAGS} ${CEF_EXE_LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG      "${CEF_LINKER_FLAGS_DEBUG} ${CEF_EXE_LINKER_FLAGS_DEBUG}")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CEF_LINKER_FLAGS_RELEASE} ${CEF_EXE_LINKER_FLAGS_RELEASE}")
+set(CMAKE_SHARED_LINKER_FLAGS         "${CEF_LINKER_FLAGS} ${CEF_SHARED_LINKER_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CEF_LINKER_FLAGS_DEBUG} ${CEF_SHARED_LINKER_FLAGS_DEBUG}")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CEF_LINKER_FLAGS_RELEASE} ${CEF_SHARED_LINKER_FLAGS_RELEASE}")
+
+add_subdirectory(libcef_dll)
+add_subdirectory(cefclient)
+add_subdirectory(cefsimple)
+
+message(STATUS "*** CONFIGURATION SETTINGS ***")
+message(STATUS "Generator:                    ${CMAKE_GENERATOR}")
+message(STATUS "Platform:                     ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Project architecture:         ${PROJECT_ARCH}")
+
+if(${CMAKE_GENERATOR} STREQUAL "Ninja" OR ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+  message(STATUS "Build type:                   ${CMAKE_BUILD_TYPE}")
+endif()
+
+if(OS_MACOSX)
+  message(STATUS "Base SDK:                     ${CMAKE_OSX_SYSROOT}")
+  message(STATUS "Target SDK:                   ${CEF_TARGET_SDK}")
+endif()
+
+if(OS_WINDOWS)
+  message(STATUS "CEF Windows sandbox:          ${USE_SANDBOX}")
+  message(STATUS "Visual Studio ATL support:    ${USE_ATL}")
+endif()
+
+set(LIBRARIES ${CEF_STANDARD_LIBS})
+if(OS_WINDOWS AND USE_SANDBOX)
+  set(LIBRARIES ${LIBRARIES} ${CEF_SANDBOX_STANDARD_LIBS})
+endif()
+message(STATUS "Standard libraries:           ${LIBRARIES}")
+
+get_directory_property(DEFINITIONS COMPILE_DEFINITIONS)
+message(STATUS "Compiler definitions:         ${DEFINITIONS}")
+
+message(STATUS "C_FLAGS:                      ${CMAKE_C_FLAGS}")
+message(STATUS "C_FLAGS_DEBUG:                ${CMAKE_C_FLAGS_DEBUG}")
+message(STATUS "C_FLAGS_RELEASE:              ${CMAKE_C_FLAGS_RELEASE}")
+message(STATUS "CXX_FLAGS:                    ${CMAKE_CXX_FLAGS}")
+message(STATUS "CXX_FLAGS_DEBUG:              ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "CXX_FLAGS_RELEASE:            ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "EXE_LINKER_FLAGS:             ${CMAKE_EXE_LINKER_FLAGS}")
+message(STATUS "EXE_LINKER_FLAGS_DEBUG:       ${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+message(STATUS "EXE_LINKER_FLAGS_RELEASE:     ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+message(STATUS "SHARED_LINKER_FLAGS:          ${CMAKE_SHARED_LINKER_FLAGS}")
+message(STATUS "SHARED_LINKER_FLAGS_DEBUG:    ${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
+message(STATUS "SHARED_LINKER_FLAGS_RELEASE:  ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+
+if(OS_LINUX OR OS_WINDOWS)
+  message(STATUS "CEF Binary files:             ${CEF_BINARY_FILES}")
+  message(STATUS "CEF Resource files:           ${CEF_RESOURCE_FILES}")
+endif()

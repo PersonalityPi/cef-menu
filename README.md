@@ -1,5 +1,3 @@
-To Build:
-
-Get CEF Build from : https://cefbuilds.com/
-
-Extract contents of this git to the cefsimple folder and place the bat file in the main cef directory and run.
+To Build: 
+Extract contents of Resources.7z 
+in this git to the root folder and run generate_vs2013_sln_files.bat 
