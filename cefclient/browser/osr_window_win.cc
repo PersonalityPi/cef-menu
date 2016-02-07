@@ -7,7 +7,6 @@
 #include <windowsx.h>
 
 #include "include/base/cef_build.h"
-#include "cefclient/browser/geometry_util.h"
 #include "cefclient/browser/main_message_loop.h"
 #include "cefclient/browser/resource.h"
 #include "cefclient/browser/util_win.h"
@@ -56,7 +55,6 @@ OsrWindowWin::OsrWindowWin(Delegate* delegate,
       hdc_(NULL),
       hrc_(NULL),
       client_rect_(),
-      device_scale_factor_(client::GetDeviceScaleFactor()),
       painting_popup_(false),
       render_task_pending_(false),
       hidden_(false),
@@ -198,24 +196,6 @@ void OsrWindowWin::SetFocus() {
    if (hwnd_) {
     // Give focus to the native window.
     ::SetFocus(hwnd_);
-  }
-}
-
-void OsrWindowWin::SetDeviceScaleFactor(float device_scale_factor) {
-  if (!CefCurrentlyOn(TID_UI)) {
-    // Execute this method on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&OsrWindowWin::SetDeviceScaleFactor, this,
-                                   device_scale_factor));
-    return;
-  }
-
-  if (device_scale_factor == device_scale_factor_)
-    return;
-
-  device_scale_factor_ = device_scale_factor;
-  if (browser_) {
-    browser_->GetHost()->NotifyScreenInfoChanged();
-    browser_->GetHost()->WasResized();
   }
 }
 
@@ -509,13 +489,13 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
         last_click_time_ = currentTime;
         last_click_button_ = btnType;
 
+        CefRefPtr<CefBrowserHost> browser_host = browser_->GetHost();
         if (browser_host) {
           CefMouseEvent mouse_event;
           mouse_event.x = x;
           mouse_event.y = y;
           last_mouse_down_on_view_ = !IsOverPopupWidget(x, y);
           ApplyPopupOffset(mouse_event.x, mouse_event.y);
-          DeviceToLogical(mouse_event, device_scale_factor_);
           mouse_event.modifiers = GetCefMouseModifiers(wParam);
           browser_host->SendMouseClickEvent(mouse_event, btnType, false,
                                             last_click_count_);
@@ -549,7 +529,6 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
             break;
           }
           ApplyPopupOffset(mouse_event.x, mouse_event.y);
-          DeviceToLogical(mouse_event, device_scale_factor_);
           mouse_event.modifiers = GetCefMouseModifiers(wParam);
           browser_host->SendMouseClickEvent(mouse_event, btnType, true,
                                             last_click_count_);
@@ -587,7 +566,6 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
           mouse_event.x = x;
           mouse_event.y = y;
           ApplyPopupOffset(mouse_event.x, mouse_event.y);
-          DeviceToLogical(mouse_event, device_scale_factor_);
           mouse_event.modifiers = GetCefMouseModifiers(wParam);
           browser_host->SendMouseMoveEvent(mouse_event, false);
         }
@@ -615,7 +593,6 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
         CefMouseEvent mouse_event;
         mouse_event.x = p.x;
         mouse_event.y = p.y;
-        DeviceToLogical(mouse_event, device_scale_factor_);
         mouse_event.modifiers = GetCefMouseModifiers(wParam);
         browser_host->SendMouseMoveEvent(mouse_event, true);
       }
@@ -635,8 +612,8 @@ void OsrWindowWin::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
         mouse_event.x = screen_point.x;
         mouse_event.y = screen_point.y;
         ApplyPopupOffset(mouse_event.x, mouse_event.y);
-        DeviceToLogical(mouse_event, device_scale_factor_);
         mouse_event.modifiers = GetCefMouseModifiers(wParam);
+
         browser_host->SendMouseWheelEvent(mouse_event,
                                           IsKeyDown(VK_SHIFT) ? delta : 0,
                                           !IsKeyDown(VK_SHIFT) ? delta : 0);
@@ -754,6 +731,16 @@ void OsrWindowWin::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 bool OsrWindowWin::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
                                      CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
+
+  RECT window_rect = {0};
+  HWND root_window = GetAncestor(hwnd_, GA_ROOT);
+  if (::GetWindowRect(root_window, &window_rect)) {
+    rect = CefRect(window_rect.left,
+                   window_rect.top,
+                   window_rect.right - window_rect.left,
+                   window_rect.bottom - window_rect.top);
+    return true;
+  }
   return false;
 }
 
@@ -761,11 +748,9 @@ bool OsrWindowWin::GetViewRect(CefRefPtr<CefBrowser> browser,
                                CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
 
-  rect.x = rect.y = 0;
-  rect.width = DeviceToLogical(client_rect_.right - client_rect_.left,
-                               device_scale_factor_);
-  rect.height = DeviceToLogical(client_rect_.bottom - client_rect_.top,
-                                device_scale_factor_);
+  rect.x =  rect.y = 0;
+  rect.width = client_rect_.right - client_rect_.left;
+  rect.height = client_rect_.bottom - client_rect_.top;
   return true;
 }
 
@@ -780,10 +765,7 @@ bool OsrWindowWin::GetScreenPoint(CefRefPtr<CefBrowser> browser,
     return false;
 
   // Convert the point from view coordinates to actual screen coordinates.
-  POINT screen_pt = {
-      LogicalToDevice(viewX, device_scale_factor_),
-      LogicalToDevice(viewY, device_scale_factor_)
-  };
+  POINT screen_pt = {viewX, viewY};
   ClientToScreen(hwnd_, &screen_pt);
   screenX = screen_pt.x;
   screenY = screen_pt.y;
@@ -794,19 +776,7 @@ bool OsrWindowWin::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                  CefScreenInfo& screen_info) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (!::IsWindow(hwnd_))
-    return false;
-
-  CefRect view_rect;
-  GetViewRect(browser, view_rect);
-
-  screen_info.device_scale_factor = device_scale_factor_;
-
-  // The screen info rectangles are used by the renderer to create and position
-  // popups. Keep popups inside the view rectangle.
-  screen_info.rect = view_rect;
-  screen_info.available_rect = view_rect;
-  return true;
+  return false;
 }
 
 void OsrWindowWin::OnPopupShow(CefRefPtr<CefBrowser> browser,
@@ -824,7 +794,7 @@ void OsrWindowWin::OnPopupSize(CefRefPtr<CefBrowser> browser,
                                const CefRect& rect) {
   CEF_REQUIRE_UI_THREAD();
 
-  renderer_.OnPopupSize(browser, LogicalToDevice(rect, device_scale_factor_));
+  renderer_.OnPopupSize(browser, rect);
 }
 
 void OsrWindowWin::OnPaint(CefRefPtr<CefBrowser> browser,
@@ -878,7 +848,6 @@ bool OsrWindowWin::StartDragging(
 #if defined(CEF_USE_ATL)
   if (!drop_target_)
     return false;
-
   current_drag_op_ = DRAG_OPERATION_NONE;
   CefBrowserHost::DragOperationsMask result =
       drop_target_->StartDragging(browser, drag_data, allowed_ops, x, y);
@@ -886,11 +855,7 @@ bool OsrWindowWin::StartDragging(
   POINT pt = {};
   GetCursorPos(&pt);
   ScreenToClient(hwnd_, &pt);
-
-  browser->GetHost()->DragSourceEndedAt(
-      DeviceToLogical(pt.x, device_scale_factor_),
-      DeviceToLogical(pt.y, device_scale_factor_),
-      result);
+  browser->GetHost()->DragSourceEndedAt(pt.x, pt.y, result);
   browser->GetHost()->DragSourceSystemDragEnded();
   return true;
 #else
@@ -916,7 +881,6 @@ OsrWindowWin::OnDragEnter(CefRefPtr<CefDragData> drag_data,
                           CefMouseEvent ev,
                           CefBrowserHost::DragOperationsMask effect) {
   if (browser_) {
-    DeviceToLogical(ev, device_scale_factor_);
     browser_->GetHost()->DragTargetDragEnter(drag_data, ev, effect);
     browser_->GetHost()->DragTargetDragOver(ev, effect);
   }
@@ -926,10 +890,8 @@ OsrWindowWin::OnDragEnter(CefRefPtr<CefDragData> drag_data,
 CefBrowserHost::DragOperationsMask
 OsrWindowWin::OnDragOver(CefMouseEvent ev,
                          CefBrowserHost::DragOperationsMask effect) {
-  if (browser_) {
-    DeviceToLogical(ev, device_scale_factor_);
+  if (browser_)
     browser_->GetHost()->DragTargetDragOver(ev, effect);
-  }
   return current_drag_op_;
 }
 
@@ -942,7 +904,6 @@ CefBrowserHost::DragOperationsMask
 OsrWindowWin::OnDrop(CefMouseEvent ev,
                      CefBrowserHost::DragOperationsMask effect) {
   if (browser_) {
-    DeviceToLogical(ev, device_scale_factor_);
     browser_->GetHost()->DragTargetDragOver(ev, effect);
     browser_->GetHost()->DragTargetDrop(ev);
   }

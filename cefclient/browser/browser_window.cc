@@ -15,13 +15,6 @@ BrowserWindow::BrowserWindow(Delegate* delegate)
   DCHECK(delegate_);
 }
 
-void BrowserWindow::SetDeviceScaleFactor(float device_scale_factor) {
-}
-
-float BrowserWindow::GetDeviceScaleFactor() const {
-  return 1.0f;
-}
-
 CefRefPtr<CefBrowser> BrowserWindow::GetBrowser() const {
   REQUIRE_MAIN_THREAD();
   return browser_;
@@ -48,10 +41,8 @@ void BrowserWindow::OnBrowserClosing(CefRefPtr<CefBrowser> browser) {
 
 void BrowserWindow::OnBrowserClosed(CefRefPtr<CefBrowser> browser) {
   REQUIRE_MAIN_THREAD();
-  if (browser_.get()) {
-    DCHECK_EQ(browser->GetIdentifier(), browser_->GetIdentifier());
-    browser_ = NULL;
-  }
+  DCHECK_EQ(browser->GetIdentifier(), browser_->GetIdentifier());
+  browser_ = NULL;
 
   client_handler_->DetachDelegate();
   client_handler_ = NULL;

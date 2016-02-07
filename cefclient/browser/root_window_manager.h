@@ -80,8 +80,6 @@ class RootWindowManager : public RootWindow::Delegate {
   // Singleton window used as the temporary parent for popup browsers.
   TempWindow temp_window_;
 
-  CefRefPtr<CefRequestContext> shared_request_context_;
-
   DISALLOW_COPY_AND_ASSIGN(RootWindowManager);
 };
 

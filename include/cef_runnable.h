@@ -148,7 +148,7 @@ class CefRunnableMethod : public CefTask {
       traits_.ReleaseCallee(obj);
   }
 
-  void Execute() OVERRIDE {
+  virtual void Execute() {
     if (obj_)
       DispatchToMethod(obj_, meth_, params_);
   }
@@ -240,7 +240,7 @@ class CefRunnableFunction : public CefTask {
   ~CefRunnableFunction() {
   }
 
-  void Execute() OVERRIDE {
+  virtual void Execute() {
     if (function_)
       DispatchToFunction(function_, params_);
   }

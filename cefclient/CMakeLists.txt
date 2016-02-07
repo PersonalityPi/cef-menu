@@ -26,8 +26,6 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/client_types.h
   browser/dialog_test.cc
   browser/dialog_test.h
-  browser/geometry_util.cc
-  browser/geometry_util.h
   browser/main_context.cc
   browser/main_context.h
   browser/main_context_impl.cc
@@ -39,12 +37,8 @@ set(CEFCLIENT_BROWSER_BROWSER_SRCS
   browser/osr_dragdrop_events.h
   browser/osr_renderer.cc
   browser/osr_renderer.h
-  browser/preferences_test.cc
-  browser/preferences_test.h
   browser/resource.h
   browser/resource_util.h
-  browser/response_filter_test.cc
-  browser/response_filter_test.h
   browser/root_window.cc
   browser/root_window.h
   browser/root_window_manager.cc
@@ -220,12 +214,8 @@ set(CEFCLIENT_RESOURCES_RESOURCES_SRCS
   resources/logo.png
   resources/osr_test.html
   resources/other_tests.html
-  resources/pdf.html
-  resources/pdf.pdf
   resources/performance.html
   resources/performance2.html
-  resources/preferences.html
-  resources/response_filter.html
   resources/transparency.html
   resources/urlrequest.html
   resources/window.html
@@ -379,6 +369,9 @@ if(OS_MACOSX)
 
   # Fix the framework link in the main executable.
   FIX_MACOSX_MAIN_FRAMEWORK_LINK(${CEF_TARGET} ${CEF_APP})
+
+  # Make the other helper app bundles.
+  MAKE_MACOSX_HELPERS(${CEF_TARGET} ${CEF_APP})
 
   if(NOT ${CMAKE_GENERATOR} STREQUAL "Xcode")
     # Manually process and copy over resource files.

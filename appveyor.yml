@@ -27,6 +27,8 @@ build_script:
 
     MOVE cefsimple.exe custom_menu.exe
 
+    appveyor PushArtifact custom_menu.exe
+
     %_7z% *
 
     appveyor PushArtifact %_zip%

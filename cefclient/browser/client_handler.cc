@@ -459,8 +459,7 @@ bool ClientHandler::OnOpenURLFromTab(
     const CefString& target_url,
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool user_gesture) {
-  if (target_disposition == WOD_NEW_BACKGROUND_TAB ||
-      target_disposition == WOD_NEW_FOREGROUND_TAB) {
+  if (user_gesture && target_disposition == WOD_NEW_BACKGROUND_TAB) {
     // Handle middle-click and ctrl + left-click by opening the URL in a new
     // browser window.
     MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
@@ -490,17 +489,6 @@ CefRefPtr<CefResourceHandler> ClientHandler::GetResourceHandler(
   CEF_REQUIRE_IO_THREAD();
 
   return resource_manager_->GetResourceHandler(browser, frame, request);
-}
-
-CefRefPtr<CefResponseFilter> ClientHandler::GetResourceResponseFilter(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    CefRefPtr<CefRequest> request,
-    CefRefPtr<CefResponse> response) {
-  CEF_REQUIRE_IO_THREAD();
-
-  return test_runner::GetResourceResponseFilter(browser, frame, request,
-                                                response);
 }
 
 bool ClientHandler::OnQuotaRequest(CefRefPtr<CefBrowser> browser,

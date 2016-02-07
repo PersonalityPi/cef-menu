@@ -62,7 +62,6 @@
 #include "libcef_dll/cpptoc/request_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
-#include "libcef_dll/cpptoc/response_filter_cpptoc.h"
 #include "libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
 #include "libcef_dll/cpptoc/set_cookie_callback_cpptoc.h"
@@ -100,7 +99,6 @@
 #include "libcef_dll/ctocpp/print_settings_ctocpp.h"
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
 #include "libcef_dll/ctocpp/request_callback_ctocpp.h"
-#include "libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/sslcert_principal_ctocpp.h"
 #include "libcef_dll/ctocpp/sslinfo_ctocpp.h"
 #include "libcef_dll/ctocpp/scheme_registrar_ctocpp.h"
@@ -242,9 +240,6 @@ CEF_GLOBAL void CefShutdown() {
   DCHECK(base::AtomicRefCountIsZero(
       &CefResourceBundleHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefResourceHandlerCppToC::DebugObjCt));
-  DCHECK(base::AtomicRefCountIsZero(&CefResponseFilterCppToC::DebugObjCt));
-  DCHECK(base::AtomicRefCountIsZero(
-      &CefRunContextMenuCallbackCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(
       &CefRunFileDialogCallbackCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefSSLCertPrincipalCToCpp::DebugObjCt));
@@ -306,13 +301,6 @@ CEF_GLOBAL void CefSetOSModalLoop(bool osModalLoop) {
   // Execute
   cef_set_osmodal_loop(
       osModalLoop);
-}
-
-CEF_GLOBAL void CefEnableHighDPISupport() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_enable_highdpi_support();
 }
 
 CEF_GLOBAL bool CefGetGeolocation(
@@ -421,27 +409,6 @@ CEF_GLOBAL bool CefCreateURL(const CefURLParts& parts, CefString& url) {
 
   // Return type: bool
   return _retval?true:false;
-}
-
-CEF_GLOBAL CefString CefFormatUrlForSecurityDisplay(const CefString& origin_url,
-    const CefString& languages) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: origin_url; type: string_byref_const
-  DCHECK(!origin_url.empty());
-  if (origin_url.empty())
-    return CefString();
-  // Unverified params: languages
-
-  // Execute
-  cef_string_userfree_t _retval = cef_format_url_for_security_display(
-      origin_url.GetStruct(),
-      languages.GetStruct());
-
-  // Return type: string
-  CefString _retvalStr;
-  _retvalStr.AttachToUserFree(_retval);
-  return _retvalStr;
 }
 
 CEF_GLOBAL CefString CefGetMimeType(const CefString& extension) {

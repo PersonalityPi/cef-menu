@@ -50,8 +50,6 @@ class CefContextMenuParamsCToCpp
   bool IsEditable() OVERRIDE;
   bool IsSpellCheckEnabled() OVERRIDE;
   EditStateFlags GetEditStateFlags() OVERRIDE;
-  bool IsCustomMenu() OVERRIDE;
-  bool IsPepperMenu() OVERRIDE;
 };
 
 #endif  // USING_CEF_SHARED

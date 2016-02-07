@@ -35,7 +35,7 @@ class V8Handler : public CefV8Handler {
                        CefRefPtr<CefV8Value> object,
                        const CefV8ValueList& arguments,
                        CefRefPtr<CefV8Value>& retval,
-                       CefString& exception) OVERRIDE {
+                       CefString& exception) {
     if (name == kRunPerfTest) {
       if (arguments.size() == 1 && arguments[0]->IsString()) {
         // Run the specified perf test.

@@ -43,6 +43,10 @@ ClientApp::ProcessType ClientApp::GetProcessType(
 
 void ClientApp::OnRegisterCustomSchemes(
     CefRefPtr<CefSchemeRegistrar> registrar) {
+  // Default schemes that support cookies.
+  cookieable_schemes_.push_back("http");
+  cookieable_schemes_.push_back("https");
+
   RegisterCustomSchemes(registrar, cookieable_schemes_);
 }
 
